@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller
+  namespace: ledboot-ingress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: controller
+  template:
+    metadata:
+      labels:
+        app: controller
+    spec:
+      serviceAccountName: controller
+      containers:
+        - name: controller
+          image: github.com/ledboot/knative-cluster-ingress/cmd
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /etc/config-logging
+              name: config-logging
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging

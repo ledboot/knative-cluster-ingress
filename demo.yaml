@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ledboot
+---
+apiVersion: v1
+data:
+  loglevel.activator: info
+  loglevel.autoscaler: info
+  loglevel.controller: info
+  loglevel.queueproxy: info
+  loglevel.webhook: info
+  zap-logger-config: |
+    {
+      "level": "info",
+      "development": false,
+      "outputPaths": ["stdout"],
+      "errorOutputPaths": ["stderr"],
+      "encoding": "json",
+      "encoderConfig": {
+        "timeKey": "ts",
+        "levelKey": "level",
+        "nameKey": "logger",
+        "callerKey": "caller",
+        "messageKey": "msg",
+        "stacktraceKey": "stacktrace",
+        "lineEnding": "",
+        "levelEncoder": "",
+        "timeEncoder": "iso8601",
+        "durationEncoder": "",
+        "callerEncoder": ""
+      }
+    }
+kind: ConfigMap
+metadata:
+  labels:
+    serving.knative.dev/release: devel
+  name: config-logging
+  namespace: ledboot
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler
+  namespace: ledboot
+  labels:
+    app: autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaler
+  template:
+    metadata:
+      labels:
+        app: autoscaler
+    spec:
+      containers:
+        - name: autoscaler
+          image: harbor.uat.cmft.com/base/nginx:latest
+          volumeMounts:
+            - mountPath: /etc/config-logging
+              name: config-logging
+      volumes:
+        - configMap:
+            name: config-logging
+          name: config-logging
