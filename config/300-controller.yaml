@@ -21,6 +21,9 @@ spec:
           volumeMounts:
             - mountPath: /etc/config-logging
               name: config-logging
+          env:
+            - name: KONG_ADMIN_URL
+              value:
       volumes:
         - name: config-logging
           configMap:

@@ -1,6 +1,7 @@
 package reconiler
 
 import (
+	"github.com/hbagdi/go-kong/kong"
 	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -18,6 +19,7 @@ var resetPeriod = 30 * time.Second
 type Options struct {
 	KubeClientSet    kubernetes.Interface
 	KnativeClientSet knativeclientset.Interface
+	KongClient       *kong.Client
 	Logger           *zap.SugaredLogger
 	StopChannel      <-chan struct{}
 	ResyncPeriod     time.Duration
@@ -34,6 +36,10 @@ type Base struct {
 func NewOptionOrDie(cfg *rest.Config, logger *zap.SugaredLogger, stopCh <-chan struct{}) Options {
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	knativeClient := knativeclientset.NewForConfigOrDie(cfg)
+
+	//kongHost, kongPort := os.Getenv("KONG_ADMIN_URL"), os.Getenv("KONG_ADMIN_PORT")
+
+	//fmt.Println("kong admin url:", kongHost, "kong port :", kongPort)
 
 	return Options{
 		KubeClientSet:    kubeClient,

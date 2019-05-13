@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/hbagdi/go-kong/kong"
 	"github.com/ledboot/knative-cluster-ingress/pkg/configmap"
 	"github.com/ledboot/knative-cluster-ingress/pkg/logging"
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler"
@@ -17,8 +18,9 @@ const (
 )
 
 var (
-	masterURL  = flag.String("master", "https://192.168.64.5:8443", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	kubeconfig = flag.String("kubeconfig", "/Users/gwynn/.kube/config", "Path to a kubeconfig. Only required if out-of-cluster.")
+	masterURL    = flag.String("master", "https://192.168.64.5:8443", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig   = flag.String("kubeconfig", "/Users/gwynn/.kube/config", "Path to a kubeconfig. Only required if out-of-cluster.")
+	kongAdminURL = flag.String("kong_admin_url", "http://192.168.64.5:30936", "Kong Admin URL")
 )
 
 func main() {
@@ -43,8 +45,20 @@ func main() {
 		logger.Fatalw("Error building kubeconfig", zap.Error(err))
 	}
 	opt := reconiler.NewOptionOrDie(cfg, logger, stopCh)
+
+	//make kong client
+	kongClient, err := kong.NewClient(kongAdminURL, nil)
+	if err != nil {
+		logger.Fatalf("make kong client error :", err)
+	}
+	root, err := kongClient.Root(nil)
+	if err != nil {
+		logger.Fatalf("can not connect kong admin :", err)
+	}
+	opt.KongClient = kongClient
+	logger.Infof("kong version : %s", root["version"].(string))
+
 	controller := clusteringress.NewController(opt)
-	logger.Info(controller.KnativeClientSet)
 	controller.Start()
 	<-stopCh
 }
