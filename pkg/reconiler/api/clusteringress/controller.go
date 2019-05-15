@@ -4,6 +4,7 @@ import (
 	"github.com/hbagdi/go-kong/kong"
 	"github.com/knative/serving/pkg/apis/networking/v1alpha1"
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler"
+	kongCtl "github.com/ledboot/knative-cluster-ingress/pkg/reconiler/api/kong"
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -11,15 +12,21 @@ import (
 	"time"
 )
 
+const (
+	ServerTAG string = "Serverless.Service"
+	RouteTAG  string = "Serverless.Route"
+)
+
 type KnativeController struct {
 	*reconiler.Base
-	KongClient *kong.Client
+	kongCtl.ServiceController
 }
 
 func NewController(opts reconiler.Options) *KnativeController {
+	kc := kongCtl.NewServiceController(opts.KongClient, opts.Logger)
 	c := &KnativeController{
-		reconiler.NewBase(opts),
-		opts.KongClient,
+		Base:              reconiler.NewBase(opts),
+		ServiceController: *kc,
 	}
 	return c
 }
@@ -37,55 +44,80 @@ func (c *KnativeController) watchClusterIngress() {
 	for {
 		select {
 		case event := <-w.ResultChan():
-			c.Logger.Info("get event type :", event.Type)
 			switch event.Type {
 			case watch.Error:
 				c.Logger.Errorf("error during watch: %v", event)
 			default:
-				c.listClusterIngress()
+				c.listClusterIngress(event)
 			}
 
 		}
 	}
 }
 
-func (c *KnativeController) listClusterIngress() {
-	ingressObjList, err := c.KnativeClientSet.NetworkingV1alpha1().ClusterIngresses().List(metav1.ListOptions{})
+func (c *KnativeController) listClusterIngress(event watch.Event) {
+	//ingressObjList, err := c.KnativeClientSet.NetworkingV1alpha1().ClusterIngresses().List(metav1.ListOptions{})
+	//if err != nil {
+	//	c.Logger.Errorf("listing ingressObjs at cluster level get error : %s", err)
+	//}
+	if event.Object == nil {
+		return
+	}
+	cl := event.Object.(*v1alpha1.ClusterIngress)
+	resource, err := fromKube(cl)
+	c.Logger.Info("ingress %v:", resource)
 	if err != nil {
-		c.Logger.Errorf("listing ingressObjs at cluster level get error : %s", err)
+		c.Logger.Errorf("format ingerss error : %+v", err)
+		return
+	}
+	c.Logger.Infof("resource name : %s", resource.Service.Name)
+	switch event.Type {
+	case watch.Deleted:
+		if service, err := c.ServiceController.Get(resource.Name); err == nil {
+			resource.Service = *service
+			c.ServiceController.Delete(*resource)
+		}
+	case watch.Modified:
+		if service, err := c.ServiceController.Get(resource.Name); err == nil {
+			resource.Service = *service
+			c.ServiceController.Update(*resource)
+		}
+	case watch.Added:
+		c.ServiceController.Create(*resource)
 	}
 
-	for _, ingressObj := range ingressObjList.Items {
-		c.Logger.Info("ingress :", ingressObj)
-		//for i, r := range ingressObj.Spec.Rules {
-		//	host := r.Hosts
-		//	serviceName :=
-		//}
-		//c.KongClient.Services.Create()
-		//c.KongClient.Routes.Create()
-		resource, err := fromKube(&ingressObj)
-		if err != nil {
-			c.Logger.Errorf("format ingerss error : %s", err)
-			continue
-		}
-		c.Logger.Infof("get ingress :", resource)
-		svc, err := c.KongClient.Services.Create(nil, &resource.Service)
-		if err != nil {
-			c.Logger.Errorf("create kong service fail v%", err)
-			continue
-		}
-		c.Logger.Infof("create kong service successful v%", svc)
-
-		for _, r := range resource.Routes {
-			r.Route.Service = svc
-			route, err := c.KongClient.Routes.Create(nil, &r.Route)
-			if err != nil {
-				c.Logger.Errorf("create kong route fail v%", err)
-				continue
-			}
-			c.Logger.Infof("create kong route successful v%", route)
-		}
-	}
+	//for _, ingressObj := range ingressObjList.Items {
+	//
+	//	//for i, r := range ingressObj.Spec.Rules {
+	//	//	host := r.Hosts
+	//	//	serviceName :=
+	//	//}
+	//	//c.KongClient.Services.Create()
+	//	//c.KongClient.Routes.Create()
+	//	resource, err := fromKube(&ingressObj)
+	//	if err != nil {
+	//		c.Logger.Errorf("format ingerss error : %s", err)
+	//		continue
+	//	}
+	//	c.Logger.Infof("get ingress :", resource)
+	//
+	//	svc, err := c.KongClient.Services.Create(nil, &resource.Service)
+	//	if err != nil {
+	//		c.Logger.Errorf("create kong service fail v%", err)
+	//		continue
+	//	}
+	//	c.Logger.Infof("create kong service successful v%", svc)
+	//
+	//	for _, r := range resource.Routes {
+	//		r.Route.Service = svc
+	//		route, err := c.KongClient.Routes.Create(nil, &r.Route)
+	//		if err != nil {
+	//			c.Logger.Errorf("create kong route fail v%", err)
+	//			continue
+	//		}
+	//		c.Logger.Infof("create kong route successful v%", route)
+	//	}
+	//}
 
 }
 
@@ -99,6 +131,7 @@ func fromKube(ingress *v1alpha1.ClusterIngress) (*v1.Service, error) {
 	routeHosts := kong.StringSlice(ingress.Spec.Rules[0].Hosts...)
 	routeProtocols := kong.StringSlice("http", "https")
 	routeName := kong.String(strings.Join([]string{serviceBackend.ServiceName, "-route"}, ""))
+	appServiceTag := ingress.Spec.Rules[0].Hosts[0]
 	kongService := &kong.Service{
 		Host:           serviceHost,
 		Name:           serviceName,
@@ -107,11 +140,13 @@ func fromKube(ingress *v1alpha1.ClusterIngress) (*v1.Service, error) {
 		ReadTimeout:    kong.Int(60000),
 		WriteTimeout:   kong.Int(60000),
 		Retries:        kong.Int(5),
+		Tags:           kong.StringSlice(ServerTAG, appServiceTag),
 	}
 	kongRoute := &kong.Route{
 		Name:      routeName,
 		Hosts:     routeHosts,
 		Protocols: routeProtocols,
+		Tags:      kong.StringSlice(RouteTAG),
 	}
 	service := &v1.Service{
 		Service: *kongService,

@@ -135,6 +135,22 @@
   revision = "3befbb6ad0cc97d4c25d851e9528915809e1a22f"
 
 [[projects]]
+  digest = "1:2be5a35f0c5b35162c41bb24971e5dcf6ce825403296ee435429cdcc4e1e847e"
+  name = "github.com/hashicorp/go-immutable-radix"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "27df80928bb34bb1b0d6d0e01b9e679902e7a6b5"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:5147e18040b5119ae3a0285294d314d8e6bce7e5fae84067fcc8c680957568c8"
+  name = "github.com/hashicorp/go-memdb"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bd0cc32bf98eaef60c07125f8b50802bc02b139f"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:d15ee511aa0f56baacc1eb4c6b922fa1c03b38413b6be18166b996d82a0156ea"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -144,6 +160,19 @@
   pruneopts = "UT"
   revision = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c"
   version = "v0.5.1"
+
+[[projects]]
+  digest = "1:88373301c8cb7314876c35e12572ebb4a423d3a1d7593091212ba85ac53d3325"
+  name = "github.com/hbagdi/deck"
+  packages = [
+    "dump",
+    "state",
+    "state/indexers",
+    "utils",
+  ]
+  pruneopts = "UT"
+  revision = "65efcb967dbbaf06930e39451f40ffc7ff336f9f"
+  version = "v0.2.0"
 
 [[projects]]
   digest = "1:e19185522dcfedc4ec3e2e0c763d32c6a1c6a3225487998117a1ead40896f127"
@@ -261,6 +290,14 @@
   pruneopts = "UT"
   revision = "0be1b92a6df0e4f5cb0a5d15fb7f643d0ad93ce6"
   version = "v3.0.0"
+
+[[projects]]
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:c1b1102241e7f645bc8e0c22ae352e8f0dc6484b6cb4d132fa9f24174e0119e2"
@@ -670,6 +707,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/hbagdi/deck/dump",
     "github.com/hbagdi/go-kong/kong",
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",

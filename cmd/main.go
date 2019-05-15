@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	component = "controller"
+	component = "ClusterIngress"
 )
 
 var (
