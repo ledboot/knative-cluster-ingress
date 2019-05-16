@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"github.com/hbagdi/go-kong/kong"
+	informers "github.com/knative/serving/pkg/client/informers/externalversions"
 	"github.com/ledboot/knative-cluster-ingress/pkg/configmap"
 	"github.com/ledboot/knative-cluster-ingress/pkg/logging"
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler"
-	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler/api/clusteringress"
+	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler/clusteringress"
 	"github.com/ledboot/knative-cluster-ingress/pkg/signals"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/clientcmd"
@@ -58,7 +59,13 @@ func main() {
 	opt.KongClient = kongClient
 	logger.Infof("kong version : %s", root["version"].(string))
 
-	controller := clusteringress.NewController(opt)
+	servingInformerFactory := informers.NewSharedInformerFactory(opt.ServingClientSet, opt.ResyncPeriod)
+	clusterIngressInformer := servingInformerFactory.Networking().V1alpha1().ClusterIngresses()
+
+	controller := clusteringress.NewController(opt, clusterIngressInformer)
+
+	clusterIngressInformer.Informer().Run(stopCh)
+
 	controller.Start()
 	<-stopCh
 }

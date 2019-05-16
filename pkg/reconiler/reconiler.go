@@ -2,7 +2,7 @@ package reconiler
 
 import (
 	"github.com/hbagdi/go-kong/kong"
-	knativeclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	clientset "github.com/knative/serving/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -18,7 +18,7 @@ var resetPeriod = 30 * time.Second
 
 type Options struct {
 	KubeClientSet    kubernetes.Interface
-	KnativeClientSet knativeclientset.Interface
+	ServingClientSet clientset.Interface
 	KongClient       *kong.Client
 	Logger           *zap.SugaredLogger
 	StopChannel      <-chan struct{}
@@ -28,14 +28,14 @@ type Options struct {
 
 type Base struct {
 	KubeClientSet    kubernetes.Interface
-	KnativeClientSet knativeclientset.Interface
+	ServingClientSet clientset.Interface
 	Logger           *zap.SugaredLogger
 	Recorder         record.EventRecorder
 }
 
 func NewOptionOrDie(cfg *rest.Config, logger *zap.SugaredLogger, stopCh <-chan struct{}) Options {
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
-	knativeClient := knativeclientset.NewForConfigOrDie(cfg)
+	servingClient := clientset.NewForConfigOrDie(cfg)
 
 	//kongHost, kongPort := os.Getenv("KONG_ADMIN_URL"), os.Getenv("KONG_ADMIN_PORT")
 
@@ -43,7 +43,7 @@ func NewOptionOrDie(cfg *rest.Config, logger *zap.SugaredLogger, stopCh <-chan s
 
 	return Options{
 		KubeClientSet:    kubeClient,
-		KnativeClientSet: knativeClient,
+		ServingClientSet: servingClient,
 		Logger:           logger,
 		StopChannel:      stopCh,
 		ResyncPeriod:     resetPeriod,
@@ -71,7 +71,7 @@ func NewBase(opt Options) *Base {
 	}
 	base := &Base{
 		KubeClientSet:    opt.KubeClientSet,
-		KnativeClientSet: opt.KnativeClientSet,
+		ServingClientSet: opt.ServingClientSet,
 		Logger:           opt.Logger,
 	}
 	return base

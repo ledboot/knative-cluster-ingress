@@ -1,12 +1,12 @@
 package kubeutils
 
 import (
-	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler/api/v1"
+	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func FromKubeMeta(meta metav1.ObjectMeta) v1.Metadata {
-	return v1.Metadata{
+func FromKubeMeta(meta metav1.ObjectMeta) reconiler.Metadata {
+	return reconiler.Metadata{
 		Name:            meta.Name,
 		Namespace:       meta.Namespace,
 		ResourceVersion: meta.ResourceVersion,
