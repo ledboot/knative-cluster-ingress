@@ -10,6 +10,7 @@ import (
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler/clusteringress"
 	"github.com/ledboot/knative-cluster-ingress/pkg/signals"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
 )
@@ -63,9 +64,9 @@ func main() {
 	clusterIngressInformer := servingInformerFactory.Networking().V1alpha1().ClusterIngresses()
 
 	controller := clusteringress.NewController(opt, clusterIngressInformer)
-
-	clusterIngressInformer.Informer().Run(stopCh)
-
-	controller.Start()
+	controller.Start(stopCh)
+	if ok := cache.WaitForCacheSync(stopCh, clusterIngressInformer.Informer().HasSynced); !ok {
+		logger.Fatalf("failed to wait for cache at index %d to sync")
+	}
 	<-stopCh
 }

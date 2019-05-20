@@ -518,7 +518,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:c86b9b486fe10b870f1229db95fb5241039101ab18c3045e1067fa31b87ee97f"
+  digest = "1:471473722181a0eca75a663dd2cf3393a00be2262dbd954c061c12f1f2f16ca7"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -656,6 +656,7 @@
     "util/homedir",
     "util/integer",
     "util/retry",
+    "util/workqueue",
   ]
   pruneopts = "UT"
   revision = "8d9ed539ba3134352c586810e749e58df4e94e4f"
@@ -682,11 +683,11 @@
   analyzer-version = 1
   input-imports = [
     "github.com/hbagdi/go-kong/kong",
+    "github.com/knative/pkg/kmeta",
     "github.com/knative/serving/pkg/apis/networking/v1alpha1",
     "github.com/knative/serving/pkg/client/clientset/versioned",
     "github.com/knative/serving/pkg/client/informers/externalversions",
     "github.com/knative/serving/pkg/client/informers/externalversions/networking/v1alpha1",
-    "github.com/knative/serving/pkg/client/listers/networking/v1alpha1",
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "k8s.io/api/core/v1",
@@ -700,6 +701,7 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
+    "k8s.io/client-go/util/workqueue",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

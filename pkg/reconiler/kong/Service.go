@@ -43,26 +43,37 @@ func (c *ServiceController) Update(service Service) {
 	updateService, err := c.client.Services.Update(nil, &service.Service)
 	if err != nil {
 		c.log.Errorf("update kong service error: %v", err)
+		return
 	}
-
-	for _, r := range service.Routes {
-		r.Route.Service = updateService
-		_, err := c.client.Routes.Create(nil, &r.Route)
-		if err != nil {
-			c.log.Errorf("update kong route error: %v", err)
+	oldRoute, _, err := c.client.Routes.ListForService(nil, updateService.ID, nil)
+	if err != nil {
+		for _, r := range service.Routes {
+			r.Route.Service = updateService
+			if _, err := c.client.Routes.Create(nil, &r.Route); err != nil {
+				c.log.Errorf("update kong route error: %v", err)
+			}
+		}
+	} else {
+		for _, or := range oldRoute {
+			for _, nr := range service.Routes {
+				if nr.Route.Name == or.Name {
+					nr.Route.ID = or.ID
+					c.client.Routes.Update(nil, &nr.Route)
+				}
+			}
 		}
 	}
 }
 
 func (c *ServiceController) Delete(service Service) {
-	err := c.client.Services.Delete(nil, service.Name)
-	if err != nil {
-		c.log.Errorf("delete kong service error: %v", err)
-	}
 	//delete route which is associated the service
 	for _, r := range service.Routes {
 		if err := c.client.Routes.Delete(nil, r.Name); err != nil {
 			c.log.Errorf("delete kong route error: %v", err)
 		}
+	}
+	err := c.client.Services.Delete(nil, service.Name)
+	if err != nil {
+		c.log.Errorf("delete kong service error: %v", err)
 	}
 }

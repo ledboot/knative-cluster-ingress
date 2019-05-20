@@ -5,6 +5,7 @@ const TypeUrl = "networking.internal.knative.dev/v1alpha1/ClusterIngress"
 type Status_State int32
 
 const (
+	ClusterIngressKind = "ClusterIngress"
 	// Pending status indicates the resource has not yet been validated
 	Status_Pending Status_State = 0
 	// Accepted indicates the resource has been validated
@@ -12,6 +13,10 @@ const (
 	// Rejected indicates an invalid configuration by the user
 	// Rejected resources may be propagated to the xDS server depending on their severity
 	Status_Rejected Status_State = 2
+
+	GroupName              = "serving.knative.dev"
+	RouteLabelKey          = GroupName + "/route"
+	RouseNamespaceLabelKes = GroupName + "/routeNamespace"
 )
 
 type Any struct {
