@@ -3,6 +3,7 @@ package reconiler
 import (
 	"github.com/hbagdi/go-kong/kong"
 	clientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	"github.com/ledboot/knative-cluster-ingress/pkg/logging"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -50,9 +51,10 @@ func NewOptionOrDie(cfg *rest.Config, logger *zap.SugaredLogger, stopCh <-chan s
 	}
 }
 
-func NewBase(opt Options) *Base {
+func NewBase(opt Options, controllerAgentName string) *Base {
 	recorder := opt.Recorder
-	logger := opt.Logger
+	logger := opt.Logger.Named(controllerAgentName).With(zap.String(logging.ControllerType, controllerAgentName))
+
 	if recorder == nil {
 		logger.Debug("Creating event broadcaster")
 		eventBroadcaster := record.NewBroadcaster()
@@ -61,7 +63,7 @@ func NewBase(opt Options) *Base {
 			eventBroadcaster.StartRecordingToSink(
 				&typedcorev1.EventSinkImpl{Interface: opt.KubeClientSet.CoreV1().Events("")}),
 		}
-		recorder = eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "knative-cluster-ingress"})
+		recorder = eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 		go func() {
 			<-opt.StopChannel
 			for _, w := range watchs {
@@ -72,7 +74,7 @@ func NewBase(opt Options) *Base {
 	base := &Base{
 		KubeClientSet:    opt.KubeClientSet,
 		ServingClientSet: opt.ServingClientSet,
-		Logger:           opt.Logger,
+		Logger:           logger,
 	}
 	return base
 }

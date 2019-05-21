@@ -5,12 +5,12 @@ import (
 	"github.com/hbagdi/go-kong/kong"
 	informers "github.com/knative/serving/pkg/client/informers/externalversions"
 	"github.com/ledboot/knative-cluster-ingress/pkg/configmap"
+	"github.com/ledboot/knative-cluster-ingress/pkg/controller"
 	"github.com/ledboot/knative-cluster-ingress/pkg/logging"
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler"
 	"github.com/ledboot/knative-cluster-ingress/pkg/reconiler/clusteringress"
 	"github.com/ledboot/knative-cluster-ingress/pkg/signals"
 	"go.uber.org/zap"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
 )
@@ -63,10 +63,11 @@ func main() {
 	servingInformerFactory := informers.NewSharedInformerFactory(opt.ServingClientSet, opt.ResyncPeriod)
 	clusterIngressInformer := servingInformerFactory.Networking().V1alpha1().ClusterIngresses()
 
-	controller := clusteringress.NewController(opt, clusterIngressInformer)
-	controller.Start(stopCh)
-	if ok := cache.WaitForCacheSync(stopCh, clusterIngressInformer.Informer().HasSynced); !ok {
-		logger.Fatalf("failed to wait for cache at index %d to sync")
+	ciController := clusteringress.NewController(opt, clusterIngressInformer)
+
+	if err := controller.StartInformers(stopCh, clusterIngressInformer.Informer()); err != nil {
+		logger.Fatalw("Failed to start informers", zap.Error(err))
 	}
-	<-stopCh
+
+	controller.StartAll(stopCh, ciController)
 }
